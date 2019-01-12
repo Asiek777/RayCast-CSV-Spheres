@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{40237B9D-0000-0000-0000-000000000000}</ProjectGuid>
     <RootNamespace>URNGNoiseGL</RootNamespace>
-    <ProjectName>URNGNoiseGL</ProjectName>
+    <ProjectName>RatyCastCSV</ProjectName>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
