@@ -75,22 +75,29 @@ __kernel void noise_uniform(__global uchar4* inputImage, __global uchar4* output
 {
 	
 	int pos = get_global_id(0) + get_global_id(1) * get_global_size(0);
-
-	float4 temp = convert_float4(inputImage[pos]);
-
-	/* compute average value of a pixel from its compoments */
-	float avg = (temp.x + temp.y + temp.z + temp.y) / 4;
-
-	__local int iv[NTAB * GROUP_SIZE];
-
-	/* Calculate deviation from the avg value of a pixel */
-	float dev = ran1(-avg, iv);
-	dev = (dev - 0.5f) * factor;
-	/* Saturate(clamp) the values */
-	
-	outputImage[pos] = convert_uchar4_sat(temp + (float4)(dev));
-	//outputImage[pos] = (uchar4)(255 ,0, 255, 255);
-	
+	int x = get_global_id(0);
+	int y = get_global_id(1);
+	float3 sphereCenter = (float3)(500., 500., 500.);
+	float3 rayStart = (float3)(500., 500., 0.);
+	float3 rayEnd = (float3)(x, y, 1000.);
+	float Radius = 100.;
+	//printf("%f %f %f", sphereCenter.x, sphereCenter.y, sphereCenter.z);
+	float dx = rayEnd.x - rayStart.x;
+	float dy = rayEnd.y - rayStart.y;
+	float dz = rayEnd.z - rayStart.z;
+	float a = dx * dx + dy * dy + dz * dz;
+	float b = 2 * dx * (rayStart.x - sphereCenter.x) 
+		+ 2 * dy * (rayStart.y - sphereCenter.y) 
+		+ 2 * dz * (rayStart.z - sphereCenter.z);
+	float c = sphereCenter.x * sphereCenter.x + sphereCenter.y * sphereCenter.y + sphereCenter.z * sphereCenter.z 
+		+ rayStart.x * rayStart.x + rayStart.y * rayStart.y + rayStart.z * rayStart.z 
+		- 2 * (sphereCenter.x * rayStart.x + sphereCenter.y * rayStart.y + sphereCenter.z * rayStart.z) 
+		- Radius * Radius;
+	float delta = b * b - 4 * a * c;
+	outputImage[pos] = (uchar4)(255 ,0, 255, 255);
+	//printf("%d %d: %f %f %f %f", x, y, a, b, c, delta);
+	if (delta>=0)
+		outputImage[pos] = (uchar4)(0, 255, 255, 255);
 }
 
 
