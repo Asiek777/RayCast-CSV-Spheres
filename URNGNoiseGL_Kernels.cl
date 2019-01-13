@@ -94,10 +94,16 @@ __kernel void noise_uniform(__global uchar4* inputImage, __global uchar4* output
 		- 2 * (sphereCenter.x * rayStart.x + sphereCenter.y * rayStart.y + sphereCenter.z * rayStart.z) 
 		- Radius * Radius;
 	float delta = b * b - 4 * a * c;
+	float t = (-b - sqrt(b * b - 4 * a * c)) / (2 * a);
 	outputImage[pos] = (uchar4)(255 ,0, 255, 255);
 	//printf("%d %d: %f %f %f %f", x, y, a, b, c, delta);
-	if (delta>=0)
-		outputImage[pos] = (uchar4)(0, 255, 255, 255);
+	if (delta >= 0) {
+		float3 point = rayStart + t * (float3)(dx, dy, dz);
+		float3 normal = (point - sphereCenter) / Radius;
+		float3 bright3 = normal * (float3)(0, 0, -1);
+		float bright = bright3.x + bright3.y + bright3.z;
+		outputImage[pos] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
+	}
 }
 
 
