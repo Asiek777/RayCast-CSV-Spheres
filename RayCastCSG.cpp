@@ -82,8 +82,8 @@ int
 RayCastCSG::createOutputImage()
 {
     // get width and height of input image
-	windowHeight = 1000;
-	windowWidth = 1000;
+	windowHeight = 1024;
+	windowWidth = 1024;
 	height = windowHeight * AA_LEVEL;
 	width = windowWidth * AA_LEVEL;
 
@@ -645,6 +645,10 @@ RayCastCSG::runCLKernels()
     status = kernel.setArg( 1 ,factor);
     CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (factor)");
 
+	// Antialiasing
+	status = kernel.setArg(2, AA_LEVEL);
+	CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (AA_LEVEL)");
+
     // Enqueue a kernel run call.
     size_t globalThreads[2] = {width, height};
     size_t localThreads[2] = {blockSizeX, blockSizeY};
@@ -995,6 +999,9 @@ RayCastCSG::run()
                                 GL_UNSIGNED_BYTE,
                                 NULL);
 
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
                 // Display image using texture
                 glDisable(GL_DEPTH_TEST);
                 glDisable(GL_LIGHTING);
@@ -1171,11 +1178,12 @@ RayCastCSG::displayFunc()
                     GL_UNSIGNED_BYTE,
                     NULL);
 
+
     // Display image using texture
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
     glEnable(GL_TEXTURE_2D);
-    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
@@ -1241,18 +1249,18 @@ void
 RayCastCSG::displayFuncWrapper()
 {
     // Call non-static function
-    RayCastCSG->displayFunc();
+    RayCast->displayFunc();
 }
 
 void
 RayCastCSG::keyboardFuncWrapper(unsigned char key, int x, int y)
 {
     // Call non-static function
-    RayCastCSG->keyboardFunc(key , x, y);
+    RayCast->keyboardFunc(key , x, y);
 }
 
 // Initialize the value to NULL
-RayCastCSG *RayCastCSG::RayCastCSG = NULL;
+RayCastCSG *RayCastCSG::RayCast = NULL;
 
 
 void
@@ -1613,7 +1621,7 @@ int
 main(int argc, char * argv[])
 {
     RayCastCSG clURNG;
-    RayCastCSG::RayCastCSG = &clURNG;
+    RayCastCSG::RayCast = &clURNG;
 
     if(clURNG.initializeGL(argc, argv) != SDK_SUCCESS)
     {

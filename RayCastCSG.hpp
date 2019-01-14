@@ -91,7 +91,7 @@ class RayCastCSG
 {
     public:
 
-        static RayCastCSG *RayCastCSG;
+        static RayCastCSG *RayCast;
         cl_double setupTime;                /**< time taken to setup OpenCL resources and building kernel */
         cl_double kernelTime;               /**< time taken to run kernel and read result back */
         cl_uchar4* inputImageData;          /**< Input bitmap data to device */

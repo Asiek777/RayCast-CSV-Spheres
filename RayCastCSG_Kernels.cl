@@ -8,8 +8,8 @@ __kernel void noise_uniform(__global uchar4* outputImage, int factor, int AA_LEV
 	int x = get_global_id(0);
 	int y = get_global_id(1);
 	float3 sphereCenter = (float3)(500., 500., 500.);
-	float3 rayStart = (float3)(500., 500., 0.);
-	float3 rayEnd = (float3)(x/AA_LEVEL, y/AA_LEVEL, 1000.);
+	float3 rayStart = (float3)(500., 500. - factor, 0.);
+	float3 rayEnd = (float3)(x / AA_LEVEL, (y - factor) / AA_LEVEL, 1000.);
 	float Radius = 100.;
 	//printf("%f %f %f", sphereCenter.x, sphereCenter.y, sphereCenter.z);
 	float dx = rayEnd.x - rayStart.x;
@@ -30,7 +30,7 @@ __kernel void noise_uniform(__global uchar4* outputImage, int factor, int AA_LEV
 	if (delta >= 0) {
 		float3 point = rayStart + t * (float3)(dx, dy, dz);
 		float3 normal = (point - sphereCenter) / Radius;
-		float3 bright3 = normal * (float3)(cos(-1.), 0, sin(-1.));
+		float3 bright3 = normal * (float3)(cos(1.), 0, sin(-1.));
 		float bright = bright3.x + bright3.y + bright3.z;
 		outputImage[pos] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
 	}
