@@ -56,11 +56,12 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <GL/glut.h>
 #endif
 
-#define INPUT_IMAGE "URNGNoiseGL_Input.bmp"
-#define OUTPUT_IMAGE "URNGNoiseGL_Output.bmp"
+#define INPUT_IMAGE "RayCastCSG_Input.bmp"
+#define OUTPUT_IMAGE "RayCastCSG_Output.bmp"
 
 #define screenWidth  512
 #define screenHeight 512
+#define AA_LEVEL 2
 
 #define GROUP_SIZE 64
 #define FACTOR 30
@@ -82,15 +83,15 @@ static clGetGLContextInfoKHR_fn clGetGLContextInfoKHR;
 using namespace appsdk;
 
 /**
-* URNGNoiseGL
+* RayCastCSG
 * Class implements OpenCL URNG GL Interop sample
 */
 
-class URNGNoiseGL
+class RayCastCSG
 {
     public:
 
-        static URNGNoiseGL *urngNoiseGL;
+        static RayCastCSG *RayCastCSG;
         cl_double setupTime;                /**< time taken to setup OpenCL resources and building kernel */
         cl_double kernelTime;               /**< time taken to run kernel and read result back */
         cl_uchar4* inputImageData;          /**< Input bitmap data to device */
@@ -111,6 +112,8 @@ class URNGNoiseGL
         cl_uint pixelSize;                  /**< Size of a pixel in BMP format> */
         cl_uint width;                      /**< Width of image */
         cl_uint height;                     /**< Height of image */
+		cl_uint windowWidth;
+		cl_uint windowHeight;
         cl_bool byteRWSupport;
         size_t blockSizeX;                  /**< Work-group size in x-direction */
         size_t blockSizeY;                  /**< Work-group size in y-direction */
@@ -141,7 +144,7 @@ class URNGNoiseGL
         * @param inputImageName name of the input file
         * @return SDK_SUCCESS on success and SDK_FAILURE on failure
         */
-        int readInputImage(std::string inputImageName);
+        int createOutputImage();
 
         /**
         * Write to an image file
@@ -154,7 +157,7 @@ class URNGNoiseGL
         * Constructor
         * Initialize member variables
         */
-        URNGNoiseGL()
+        RayCastCSG()
             : inputImageData(NULL),
               outputImageData(NULL),
               verificationOutput(NULL),
@@ -173,7 +176,7 @@ class URNGNoiseGL
             frameRefCount = 120;
         }
 
-        ~URNGNoiseGL()
+        ~RayCastCSG()
         {
         }
 

@@ -15,7 +15,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 ********************************************************************/
 
 
-#include "URNGNoiseGL.hpp"
+#include "RayCastCSG.hpp"
 #include <cmath>
 
 #ifndef _WIN32
@@ -79,28 +79,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 #endif
 
 int
-URNGNoiseGL::readInputImage(std::string inputImageName)
+RayCastCSG::createOutputImage()
 {
-
-    // load input bitmap image
-    std::string filePath = getPath() + inputImageName;
-    inputBitmap.load(filePath.c_str());
-
-    // error if image did not load
-    if(!inputBitmap.isLoaded())
-    {
-        std::cout << "Failed to load input image!";
-        return SDK_FAILURE;
-    }
-
-
     // get width and height of input image
-    height = inputBitmap.getHeight();
-    width = inputBitmap.getWidth();
-
-    // allocate memory for input & output image data
-    inputImageData  = (cl_uchar4*)malloc(width * height * sizeof(cl_uchar4));
-    CHECK_ALLOCATION(inputImageData, "Failed to allocate memory! (inputImageData)");
+	windowHeight = 1000;
+	windowWidth = 1000;
+	height = windowHeight * AA_LEVEL;
+	width = windowWidth * AA_LEVEL;
 
     // allocate memory for output image data
     outputImageData = (cl_uchar4*)malloc(width * height * sizeof(cl_uchar4));
@@ -110,50 +95,31 @@ URNGNoiseGL::readInputImage(std::string inputImageName)
     // initialize the Image data to NULL
     memset(outputImageData, 0, width * height * pixelSize);
 
-    // get the pointer to pixel data
-    pixelData = inputBitmap.getPixels();
-    if(pixelData == NULL)
-    {
-        std::cout << "Failed to read pixel Data!";
-        return SDK_FAILURE;
-    }
-
-    // Copy pixel data into inputImageData
-    memcpy(inputImageData, pixelData, width * height * pixelSize);
-
-    // allocate memory for verification output
-    verificationOutput = (cl_uchar4*)malloc(width * height * pixelSize);
-    CHECK_ALLOCATION(verificationOutput,
-                     "verificationOutput heap allocation failed!");
-
-    // initialize the data to NULL
-    memset(verificationOutput, 0, width * height * pixelSize);
-
     return SDK_SUCCESS;
 
 }
 
 
 int
-URNGNoiseGL::writeOutputImage(std::string outputImageName)
+RayCastCSG::writeOutputImage(std::string outputImageName)
 {
     // copy output image data back to original pixel data
-    memcpy(pixelData, outputImageData, width * height * pixelSize);
+    //memcpy(pixelData, outputImageData, width * height * pixelSize);
 
-    // write the output bmp file
-    if(!inputBitmap.write(outputImageName.c_str()))
-    {
-        std::cout << "Failed to write output image!";
-        return SDK_FAILURE;
-    }
+    //// write the output bmp file
+    //if(!inputBitmap.write(outputImageName.c_str()))
+    //{
+    //    std::cout << "Failed to write output image!";
+    //    return SDK_FAILURE;
+    //}
     return SDK_SUCCESS;
 }
 
 int
-URNGNoiseGL::genBinaryImage()
+RayCastCSG::genBinaryImage()
 {
     bifData binaryData;
-    binaryData.kernelName = std::string("URNGNoiseGL_Kernels.cl");
+    binaryData.kernelName = std::string("RayCastCSG_Kernels.cl");
     binaryData.flagsStr = std::string("");
     if(sampleArgs->isComplierFlagsSpecified())
     {
@@ -167,7 +133,7 @@ URNGNoiseGL::genBinaryImage()
 
 
 int
-URNGNoiseGL::setupCL()
+RayCastCSG::setupCL()
 {
     cl_int status = CL_SUCCESS;
     cl::Event writeEvt;
@@ -312,26 +278,6 @@ URNGNoiseGL::setupCL()
         inMemFlags |= CL_MEM_USE_PERSISTENT_MEM_AMD;
     }
 
-    // Create memory object for input Image
-    inputImageBuffer = cl::Buffer(context,
-                                  inMemFlags,
-                                  width * height * pixelSize,
-                                  0,
-                                  &status);
-    CHECK_OPENCL_ERROR(status, "Buffer::Buffer() failed. (inputImageBuffer)");
-
-    status = commandQueue.enqueueWriteBuffer(
-                 inputImageBuffer,
-                 CL_FALSE,
-                 0,
-                 width * height * sizeof(cl_uchar4),
-                 inputImageData,
-                 NULL,
-                 &writeEvt);
-    CHECK_OPENCL_ERROR(status,
-                       "CommandQueue::enqueueWriteBuffer() failed. (inputImageBuffer)");
-
-    // Create memory objects for output Image
 
     // Create texture object
     glGenTextures(1, &tex);
@@ -390,7 +336,7 @@ URNGNoiseGL::setupCL()
     }
     else
     {
-        kernelPath.append("URNGNoiseGL_Kernels.cl");
+        kernelPath.append("RayCastCSG_Kernels.cl");
         if(!kernelFile.open(kernelPath.c_str()))
         {
             std::cout << "Failed to load kernel file : " << kernelPath << std::endl;
@@ -450,20 +396,10 @@ URNGNoiseGL::setupCL()
     status = commandQueue.flush();
     CHECK_OPENCL_ERROR(status, "cl::CommandQueue.flush failed.");
 
-    eventStatus = CL_QUEUED;
-    while(eventStatus != CL_COMPLETE)
-    {
-        status = writeEvt.getInfo<cl_int>(
-                     CL_EVENT_COMMAND_EXECUTION_STATUS,
-                     &eventStatus);
-        CHECK_OPENCL_ERROR(status,
-                           "cl::Event.getInfo(CL_EVENT_COMMAND_EXECUTION_STATUS) failed.");
-    }
-
     return SDK_SUCCESS;
 }
 
-int URNGNoiseGL::InitializeGLAndGetCLContext(cl_platform_id platform,
+int RayCastCSG::InitializeGLAndGetCLContext(cl_platform_id platform,
         cl_context &context,
         cl_device_id &interopDevice)
 {
@@ -665,7 +601,7 @@ int URNGNoiseGL::InitializeGLAndGetCLContext(cl_platform_id platform,
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glDisable(GL_DEPTH_TEST);
 
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, windowWidth, windowHeight);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -679,14 +615,10 @@ int URNGNoiseGL::InitializeGLAndGetCLContext(cl_platform_id platform,
     return SDK_SUCCESS;
 }
 int
-URNGNoiseGL::runCLKernels()
+RayCastCSG::runCLKernels()
 {
     cl_int status;
     cl_int eventStatus = CL_QUEUED;
-
-    // input buffer image
-    status = kernel.setArg(0, inputImageBuffer);
-    CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg failed. (inputImageBuffer)");
 
     // Acquire outputImageBuffer from GL
     cl_event acquireEvt;
@@ -706,11 +638,11 @@ URNGNoiseGL::runCLKernels()
     CHECK_ERROR(status, SDK_SUCCESS, "WaitForEventAndRelease(acquireEvt) Failed");
 
     // outBuffer imager
-    status = kernel.setArg( 1 ,outputImageBuffer);
+    status = kernel.setArg( 0 ,outputImageBuffer);
     CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (outputImageBuffer)");
 
     // factor
-    status = kernel.setArg( 2 ,factor);
+    status = kernel.setArg( 1 ,factor);
     CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (factor)");
 
     // Enqueue a kernel run call.
@@ -777,7 +709,7 @@ URNGNoiseGL::runCLKernels()
 }
 
 int
-URNGNoiseGL::initialize()
+RayCastCSG::initialize()
 {
     // Call base class Initialize to get default configuration
     if(sampleArgs->initialize() != SDK_SUCCESS)
@@ -815,11 +747,11 @@ URNGNoiseGL::initialize()
 }
 
 int
-URNGNoiseGL::setup()
+RayCastCSG::setup()
 {
     int status = 0;
     // Allocate host memory and read input image
-    status = readInputImage(INPUT_IMAGE);
+    status = createOutputImage();
     CHECK_ERROR(status, SDK_SUCCESS, "Read Input Image Failed");
 
     // create and initialize timers
@@ -847,7 +779,7 @@ URNGNoiseGL::setup()
 }
 
 int
-URNGNoiseGL::run()
+RayCastCSG::run()
 {
     cl_int status = 0;
     // create and initialize timers
@@ -971,7 +903,7 @@ URNGNoiseGL::run()
             glMatrixMode( GL_MODELVIEW);
             glLoadIdentity();
 
-            glViewport(0, 0, width, height);
+            glViewport(0, 0, windowWidth, windowHeight);
 
             glBegin(GL_QUADS);
 
@@ -1007,9 +939,9 @@ URNGNoiseGL::run()
                                       (double) frameCount);
                 int framesPerSec = (int)(1.0 / (fMs / CLOCKS_PER_SEC));
 #if defined (_WIN32) && !defined(__MINGW32__)
-                sprintf_s(title, 256, "URNGNoiseGL | %d fps ", framesPerSec);
+                sprintf_s(title, 256, "RayCastCSG | %d fps ", framesPerSec);
 #else
-                sprintf(title, "URNGNoiseGL | %d fps ", framesPerSec);
+                sprintf(title, "RayCastCSG | %d fps ", framesPerSec);
 #endif
                 //glutSetWindowTitle(title);
                 XStoreName(displayName, win, title);
@@ -1077,7 +1009,7 @@ URNGNoiseGL::run()
                 glMatrixMode( GL_MODELVIEW);
                 glLoadIdentity();
 
-                glViewport(0, 0, width, height);
+                glViewport(0, 0, windowWidth, windowHeight);
 
                 glBegin(GL_QUADS);
 
@@ -1114,9 +1046,9 @@ URNGNoiseGL::run()
                                           (double) frameCount);
                     int framesPerSec = (int)(1.0 / (fMs / CLOCKS_PER_SEC));
 #if defined (_WIN32) && !defined(__MINGW32__)
-                    sprintf_s(title, 256, "URNGNoiseGL | %d fps ", framesPerSec);
+                    sprintf_s(title, 256, "RayCastCSG | %d fps ", framesPerSec);
 #else
-                    sprintf(title, "URNGNoiseGL | %d fps ", framesPerSec);
+                    sprintf(title, "RayCastCSG | %d fps ", framesPerSec);
 #endif
                     //glutSetWindowTitle(title);
                     frameCount = 0;
@@ -1136,7 +1068,7 @@ URNGNoiseGL::run()
 }
 
 int
-URNGNoiseGL::cleanup()
+RayCastCSG::cleanup()
 {
     if(!byteRWSupport)
     {
@@ -1144,51 +1076,51 @@ URNGNoiseGL::cleanup()
     }
 
     // release program resources (input memory etc.)
-    FREE(inputImageData);
+    //FREE(inputImageData);
 
     FREE(outputImageData);
 
-    FREE(verificationOutput);
+    //FREE(verificationOutput);
 
     return SDK_SUCCESS;
 }
 
 
 void
-URNGNoiseGL::URNGCPUReference()
+RayCastCSG::URNGCPUReference()
 {
 
 }
 
 
 int
-URNGNoiseGL::verifyResults()
+RayCastCSG::verifyResults()
 {
-    if(sampleArgs->verify)
-    {
-        float mean = 0;
-        for(int i = 0; i < (int)(width * height); i++)
-        {
-            mean += outputImageData[i].s[0] - inputImageData[i].s[0];
-        }
-        mean /= (width * height * factor);
+    //if(sampleArgs->verify)
+    //{
+    //    float mean = 0;
+    //    for(int i = 0; i < (int)(width * height); i++)
+    //    {
+    //        mean += outputImageData[i].s[0] - inputImageData[i].s[0];
+    //    }
+    //    mean /= (width * height * factor);
 
-        if(fabs(mean) < 1.0)
-        {
-            std::cout << "Passed! \n" << std::endl;
-            return SDK_SUCCESS;
-        }
-        else
-        {
-            std::cout << "Failed! \n" << std::endl;
-            return SDK_FAILURE;
-        }
-    }
+    //    if(fabs(mean) < 1.0)
+    //    {
+    //        std::cout << "Passed! \n" << std::endl;
+    //        return SDK_SUCCESS;
+    //    }
+    //    else
+    //    {
+    //        std::cout << "Failed! \n" << std::endl;
+    //        return SDK_FAILURE;
+    //    }
+    //}
     return SDK_SUCCESS;
 }
 
 void
-URNGNoiseGL::printStats()
+RayCastCSG::printStats()
 {
     if(sampleArgs->timing)
     {
@@ -1213,7 +1145,7 @@ URNGNoiseGL::printStats()
 }
 
 void
-URNGNoiseGL::displayFunc()
+RayCastCSG::displayFunc()
 {
     t1 = clock() * CLOCKS_PER_SEC;
     frameCount++;
@@ -1253,7 +1185,7 @@ URNGNoiseGL::displayFunc()
     glMatrixMode( GL_MODELVIEW);
     glLoadIdentity();
 
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, windowWidth, windowHeight);
 
     glBegin(GL_QUADS);
 
@@ -1292,9 +1224,9 @@ URNGNoiseGL::displayFunc()
                               (double) frameCount);
         int framesPerSec = (int)(1.0 / (fMs / CLOCKS_PER_SEC));
 #if defined (_WIN32) && !defined(__MINGW32__)
-        sprintf_s(title, 256, "URNGNoiseGL | %d fps ", framesPerSec);
+        sprintf_s(title, 256, "RayCastCSG | %d fps ", framesPerSec);
 #else
-        sprintf(title, "URNGNoiseGL | %d fps ", framesPerSec);
+        sprintf(title, "RayCastCSG | %d fps ", framesPerSec);
 #endif
 #ifndef _WIN32
         glutSetWindowTitle(title);
@@ -1306,25 +1238,25 @@ URNGNoiseGL::displayFunc()
 
 
 void
-URNGNoiseGL::displayFuncWrapper()
+RayCastCSG::displayFuncWrapper()
 {
     // Call non-static function
-    urngNoiseGL->displayFunc();
+    RayCastCSG->displayFunc();
 }
 
 void
-URNGNoiseGL::keyboardFuncWrapper(unsigned char key, int x, int y)
+RayCastCSG::keyboardFuncWrapper(unsigned char key, int x, int y)
 {
     // Call non-static function
-    urngNoiseGL->keyboardFunc(key , x, y);
+    RayCastCSG->keyboardFunc(key , x, y);
 }
 
 // Initialize the value to NULL
-URNGNoiseGL *URNGNoiseGL::urngNoiseGL = NULL;
+RayCastCSG *RayCastCSG::RayCastCSG = NULL;
 
 
 void
-URNGNoiseGL::keyboardFunc(unsigned char key, int /*x*/, int /*y*/)
+RayCastCSG::keyboardFunc(unsigned char key, int /*x*/, int /*y*/)
 {
     switch(key)
     {
@@ -1358,7 +1290,7 @@ URNGNoiseGL::keyboardFunc(unsigned char key, int /*x*/, int /*y*/)
 }
 #ifdef _WIN32
 int
-URNGNoiseGL::enableGLAndGetGLContext(HWND hWnd, HDC &hDC, HGLRC &hRC,
+RayCastCSG::enableGLAndGetGLContext(HWND hWnd, HDC &hDC, HGLRC &hRC,
                                      cl_platform_id platform, cl_context &context, cl_device_id &interopDevice)
 {
     cl_int status;
@@ -1450,8 +1382,8 @@ URNGNoiseGL::enableGLAndGetGLContext(HWND hWnd, HDC &hDC, HGLRC &hRC,
                              WS_CAPTION | WS_POPUPWINDOW,
                              sampleArgs->isDeviceIdEnabled() ? xCoordinate1 : xCoordinate,
                              yCoordinate,
-                             width,
-                             height,
+                             windowWidth,
+                             windowHeight,
                              NULL,
                              NULL,
                              windowclass.hInstance,
@@ -1629,7 +1561,7 @@ URNGNoiseGL::enableGLAndGetGLContext(HWND hWnd, HDC &hDC, HGLRC &hRC,
     glClearColor(0.0, 0.0, 0.0, 1.0);
     glDisable(GL_DEPTH_TEST);
 
-    glViewport(0, 0, width, height);
+    glViewport(0, 0, windowWidth, windowHeight);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -1642,7 +1574,7 @@ URNGNoiseGL::enableGLAndGetGLContext(HWND hWnd, HDC &hDC, HGLRC &hRC,
 }
 
 void
-URNGNoiseGL::disableGL(HWND hWnd, HDC hDC, HGLRC hRC)
+RayCastCSG::disableGL(HWND hWnd, HDC hDC, HGLRC hRC)
 {
     wglMakeCurrent( NULL, NULL );
     wglDeleteContext( hRC );
@@ -1652,13 +1584,13 @@ URNGNoiseGL::disableGL(HWND hWnd, HDC hDC, HGLRC hRC)
 #else
 
 void
-URNGNoiseGL::enableGLForLinux( )
+RayCastCSG::enableGLForLinux( )
 {
 
 }
 
 void
-URNGNoiseGL::disableGLForLinux()
+RayCastCSG::disableGLForLinux()
 {
 
 }
@@ -1666,11 +1598,11 @@ URNGNoiseGL::disableGLForLinux()
 #endif
 
 int
-URNGNoiseGL::initializeGL(int argc, char * argv[])
+RayCastCSG::initializeGL(int argc, char * argv[])
 {
     int status = 0;
     // Allocate host memory and read input image
-    status = readInputImage(INPUT_IMAGE);
+    status = createOutputImage();
     CHECK_ERROR(status, SDK_SUCCESS, "Read InputImage Failed");
 
     return SDK_SUCCESS;
@@ -1680,8 +1612,8 @@ URNGNoiseGL::initializeGL(int argc, char * argv[])
 int
 main(int argc, char * argv[])
 {
-    URNGNoiseGL clURNG;
-    URNGNoiseGL::urngNoiseGL = &clURNG;
+    RayCastCSG clURNG;
+    RayCastCSG::RayCastCSG = &clURNG;
 
     if(clURNG.initializeGL(argc, argv) != SDK_SUCCESS)
     {
