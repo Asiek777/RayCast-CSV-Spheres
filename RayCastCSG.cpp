@@ -1,10 +1,10 @@
 /**********************************************************************
-Copyright ©2015 Advanced Micro Devices, Inc. All rights reserved.
+Copyright ï¿½2015 Advanced Micro Devices, Inc. All rights reserved.
 
 Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
 
-•   Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-•   Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
+ï¿½   Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+ï¿½   Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or
  other materials provided with the distribution.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -172,8 +172,7 @@ RayCastCSG::setupCL()
         {
             for(i = platforms.begin(); i != platforms.end(); ++i)
             {
-                if(!strcmp((*i).getInfo<CL_PLATFORM_VENDOR>().c_str(),
-                           "Advanced Micro Devices, Inc."))
+                if(true)
                 {
                     break;
                 }
@@ -182,7 +181,7 @@ RayCastCSG::setupCL()
     }
 
     // Display available devices.
-    std::cout << "Platform :" << (*i).getInfo<CL_PLATFORM_VENDOR>().c_str() << "\n";
+    // std::cout << "Platform :" << (*i).getInfo<CL_PLATFORM_VENDOR>().c_str() << "\n";
 
 #ifdef _WIN32
     int success = enableGLAndGetGLContext(gHwnd, gHdc, gGlCtx, (*i)(), context(),
@@ -273,10 +272,10 @@ RayCastCSG::setupCL()
 
     // Set Persistent memory only for AMD platform
     cl_mem_flags inMemFlags = CL_MEM_READ_ONLY;
-    if(sampleArgs->isAmdPlatform())
-    {
-        inMemFlags |= CL_MEM_USE_PERSISTENT_MEM_AMD;
-    }
+    // if(sampleArgs->isAmdPlatform())
+    // {
+    //     inMemFlags |= CL_MEM_USE_PERSISTENT_MEM_AMD;
+    // }
 
 
     // Create texture object
@@ -898,6 +897,7 @@ RayCastCSG::run()
             glDisable(GL_DEPTH_TEST);
             glDisable(GL_LIGHTING);
             glEnable(GL_TEXTURE_2D);
+            glEnable(GL_MULTISAMPLE);
             glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
             glMatrixMode(GL_PROJECTION);
             glPushMatrix();
@@ -1249,7 +1249,7 @@ void
 RayCastCSG::displayFuncWrapper()
 {
     // Call non-static function
-    RayCast->displayFunc();
+    //RayCast->displayFunc();
 }
 
 void
