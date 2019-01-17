@@ -1006,6 +1006,7 @@ RayCastCSG::run()
                 glDisable(GL_DEPTH_TEST);
                 glDisable(GL_LIGHTING);
                 glEnable(GL_TEXTURE_2D);
+				glEnable(GL_MULTISAMPLE);
                 glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
                 glMatrixMode(GL_PROJECTION);
@@ -1326,8 +1327,8 @@ RayCastCSG::enableGLAndGetGLContext(HWND hWnd, HDC &hDC, HGLRC &hRC,
     pfd.cAccumGreenBits = 0;
     pfd.cAccumBlueBits  = 0;
     pfd.cAccumAlphaBits = 0;
-    pfd.cDepthBits      = 24;
-    pfd.cStencilBits    = 8;
+    pfd.cDepthBits      = 32;
+    pfd.cStencilBits    = 16;
     pfd.cAuxBuffers     = 0;
     pfd.iLayerType      = PFD_MAIN_PLANE;
     pfd.bReserved       = 0;
@@ -1567,6 +1568,7 @@ RayCastCSG::enableGLAndGetGLContext(HWND hWnd, HDC &hDC, HGLRC &hRC,
 
     //glEnable(GL_TEXTURE_2D);
     glClearColor(0.0, 0.0, 0.0, 1.0);
+	glEnable(GL_MULTISAMPLE);
     glDisable(GL_DEPTH_TEST);
 
     glViewport(0, 0, windowWidth, windowHeight);
@@ -1620,56 +1622,56 @@ RayCastCSG::initializeGL(int argc, char * argv[])
 int
 main(int argc, char * argv[])
 {
-    RayCastCSG clURNG;
-    RayCastCSG::RayCast = &clURNG;
+    RayCastCSG RayCast;
+    RayCastCSG::RayCast = &RayCast;
 
-    if(clURNG.initializeGL(argc, argv) != SDK_SUCCESS)
+    if(RayCast.initializeGL(argc, argv) != SDK_SUCCESS)
     {
         return SDK_FAILURE;
     }
 
-    if(clURNG.initialize() != SDK_SUCCESS)
+    if(RayCast.initialize() != SDK_SUCCESS)
     {
         return SDK_FAILURE;
     }
 
-    if(clURNG.sampleArgs->parseCommandLine(argc, argv) != SDK_SUCCESS)
+    if(RayCast.sampleArgs->parseCommandLine(argc, argv) != SDK_SUCCESS)
     {
         return SDK_FAILURE;
     }
 
-    if(clURNG.sampleArgs->isDumpBinaryEnabled())
+    if(RayCast.sampleArgs->isDumpBinaryEnabled())
     {
-        return clURNG.genBinaryImage();
+        return RayCast.genBinaryImage();
     }
 
-    int status = clURNG.setup();
+    int status = RayCast.setup();
     if (status != SDK_SUCCESS)
     {
         return status;
     }
 
-    if(clURNG.run() != SDK_SUCCESS)
+    if(RayCast.run() != SDK_SUCCESS)
     {
         return SDK_FAILURE;
     }
 
-    if(clURNG.verifyResults() != SDK_SUCCESS)
+    if(RayCast.verifyResults() != SDK_SUCCESS)
     {
         return SDK_FAILURE;
     }
 
 #ifdef _WIN32
-    clURNG.disableGL(gHwnd, gHdc, gGlCtx);
+    RayCast.disableGL(gHwnd, gHdc, gGlCtx);
 #else
     //clURNG.disableGLForLinux();
 #endif
 
-    if(clURNG.cleanup() != SDK_SUCCESS)
+    if(RayCast.cleanup() != SDK_SUCCESS)
     {
         return SDK_FAILURE;
     }
 
-    clURNG.printStats();
+    RayCast.printStats();
     return SDK_SUCCESS;
 }

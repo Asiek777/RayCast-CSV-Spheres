@@ -237,6 +237,7 @@ copy URNGNoiseGL_Input.bmp "$(OutDir)URNGNoiseGL_Input.bmp" /Y
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="RayCastCSG.hpp" />
+    <ClInclude Include="sphere.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="RayCastCSG_Kernels.cl" />
