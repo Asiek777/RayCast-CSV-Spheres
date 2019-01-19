@@ -63,11 +63,17 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PostQuitMessage(0);
             return 0;
         case 0x57: //'W'
-            factor++;;
+            pos.y++;;
             break;
         case 0x53://'S'
-            factor--;
+            pos.y--;
             break;
+		case 0x41:
+			pos.x--;
+			break;
+		case 0x44:
+			pos.x++;
+			break;
         }
         return 0;
 
@@ -614,6 +620,8 @@ RayCastCSG::runCLKernels()
                  &acquireEvt);
     CHECK_OPENCL_ERROR(status, "clEnqueueAcquireGLObjects failed.");
 
+	cl::Buffer sphereBuffer(spheres, spheres + SPHERECOUNT, true);
+
     status = commandQueue.flush();
     CHECK_OPENCL_ERROR(status, "cl::CommandQueue.flush() failed.");
 
@@ -624,14 +632,23 @@ RayCastCSG::runCLKernels()
     status = kernel.setArg( 0 ,outputImageBuffer);
     CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (outputImageBuffer)");
 
-    // factor
-    status = kernel.setArg( 1 ,factor);
-    CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (factor)");
+    // pos
+    status = kernel.setArg( 1 ,pos);
+    CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (pos)");
 
 	// Antialiasing
 	status = kernel.setArg(2, AA_LEVEL);
 	CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (AA_LEVEL)");
 
+	status = kernel.setArg(3, sphereBuffer);
+	CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (spheres)");
+
+	status = kernel.setArg(4, SPHERECOUNT);
+	CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (spheresCount)");
+
+	status = kernel.setArg(5, sizeof(cl_float), nullptr);
+
+	//printf("%d\n", sizeof(sphere));
     // Enqueue a kernel run call.
     size_t globalThreads[2] = {width, height};
     size_t localThreads[2] = {blockSizeX, blockSizeY};
@@ -717,18 +734,18 @@ RayCastCSG::initialize()
 
     delete iteration_option;
 
-    Option* factor_option = new Option;
-    CHECK_ALLOCATION(factor_option, "Memory Allocation error.\n");
+    Option* pos_option = new Option;
+    CHECK_ALLOCATION(pos_option, "Memory Allocation error.\n");
 
-    factor_option->_sVersion = "f";
-    factor_option->_lVersion = "factor";
-    factor_option->_description = "Noise factor";
-    factor_option->_type = CA_ARG_INT;
-    factor_option->_value = &factor;
+    pos_option->_sVersion = "f";
+    pos_option->_lVersion = "pos";
+    pos_option->_description = "Noise pos";
+    pos_option->_type = CA_ARG_INT;
+    pos_option->_value = &pos;
 
-    sampleArgs->AddOption(factor_option);
+    sampleArgs->AddOption(pos_option);
 
-    delete factor_option;
+    delete pos_option;
 
     return SDK_SUCCESS;
 }
@@ -843,11 +860,11 @@ RayCastCSG::run()
                         }
                         else if ((buf[0] == 'w') || (buf[0] == 'W'))
                         {
-                            factor++;//'W' key is pressed
+                            pos++;//'W' key is pressed
                         }
                         else if ((buf[0] == 's') || (buf[0] == 'S'))
                         {
-                            factor--;//'S' key is pressed
+                            pos--;//'S' key is pressed
                         }
                     }
                     break;
@@ -1081,20 +1098,29 @@ RayCastCSG *RayCastCSG::RayCast = NULL;
 void
 RayCastCSG::keyboardFunc(unsigned char key, int /*x*/, int /*y*/)
 {
-    switch(key)
-    {
-        /* If the user hits escape or Q, then exit
-         ESCAPE_KEY = 27 */
-    case 'w':
-    {
-        factor++;
-        break;
-    }
-    case 's':
-    {
-        factor--;
-        break;
-    }
+	switch (key) {
+		/* If the user hits escape or Q, then exit
+		 ESCAPE_KEY = 27 */
+	case 'w':
+	{
+		pos.y++;
+		break;
+	}
+	case 's':
+	{
+		pos.y--;
+		break;
+	}
+	case 0x41:
+	{
+		pos.x--;
+		break;
+	}
+	case 0x44:
+	{
+		pos.x++;
+		break;
+	}
     case 'q':
     case 27:
     {

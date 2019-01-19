@@ -38,7 +38,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <GL/glew.h>
 #include <CL/cl_gl.h>
 #include <CL/cl.hpp>
-
+#include "sphere.hpp"
 #ifdef _WIN32
 #pragma comment(lib,"opengl32.lib")
 #pragma comment(lib,"glu32.lib")
@@ -56,16 +56,15 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #include <GL/glut.h>
 #endif
 
-#define INPUT_IMAGE "RayCastCSG_Input.bmp"
-#define OUTPUT_IMAGE "RayCastCSG_Output.bmp"
-
 #define screenWidth  512
 #define screenHeight 512
-#define AA_LEVEL 2
+#define AA_LEVEL 1
+#define SPHERECOUNT 3
 
 #define GROUP_SIZE 64
-#define FACTOR 30
-int factor;                         /**< Noise factor */
+
+cl_int2 pos;       
+
 typedef CL_API_ENTRY cl_int (CL_API_CALL *clGetGLContextInfoKHR_fn)(
     const cl_context_properties *properties,
     cl_gl_context_info param_name,
@@ -92,6 +91,7 @@ class RayCastCSG
     public:
 
         static RayCastCSG *RayCast;
+		sphere* spheres;
         cl_double setupTime;                /**< time taken to setup OpenCL resources and building kernel */
         cl_double kernelTime;               /**< time taken to run kernel and read result back */
         cl_uchar4* inputImageData;          /**< Input bitmap data to device */
@@ -161,23 +161,24 @@ class RayCastCSG
             sampleArgs->sampleVerStr = SAMPLE_VERSION;
             pixelSize = sizeof(uchar4);
             pixelData = NULL;
-            blockSizeX = GROUP_SIZE;
-            blockSizeY = 1;
+            blockSizeX = 8;
+            blockSizeY = 8;
             iterations = 1;
-            factor = FACTOR;
+            pos = pos;
             frameCount = 0;
             frameRefCount = 120;
+			spheres = new sphere[SPHERECOUNT]{
+			sphere(500,500,700,100),
+			sphere(600,600,800,80),
+			sphere(200,800,900,40)
+			};
+			
         }
 
         ~RayCastCSG()
         {
         }
 
-        /**
-        * Allocate image memory and Load bitmap file
-        * @return SDK_SUCCESS on success and SDK_FAILURE on failure
-        */
-        int setupURNG();
 
         /**
          * Initialize the GL.
