@@ -63,7 +63,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 
 #define GROUP_SIZE 64
 
-cl_int2 pos;       
+cl_int3 pos;       
 
 typedef CL_API_ENTRY cl_int (CL_API_CALL *clGetGLContextInfoKHR_fn)(
     const cl_context_properties *properties,
@@ -168,9 +168,9 @@ class RayCastCSG
             frameCount = 0;
             frameRefCount = 120;
 			spheres = new sphere[SPHERECOUNT]{
-			sphere(500,500,700,100),
-			sphere(600,600,800,80),
-			sphere(200,800,900,40)
+			sphere(0,0,700,100),
+			sphere(100,100,800,80),
+			sphere(-300,300,900,40)
 			};
 			
         }

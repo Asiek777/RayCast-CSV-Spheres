@@ -74,7 +74,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		case 0x44:
 			pos.x++;
 			break;
-        }
+		case 0x45:
+			pos.z++;
+			break;
+		case 0x51:
+			pos.z--;
+			break;
+		}
         return 0;
 
     default:
@@ -1119,6 +1125,16 @@ RayCastCSG::keyboardFunc(unsigned char key, int /*x*/, int /*y*/)
 	case 0x44:
 	{
 		pos.x++;
+		break;
+	}
+	case 0x45:
+	{
+		pos.z++;
+		break;
+	}
+	case 0x51:
+	{
+		pos.z--;
 		break;
 	}
     case 'q':

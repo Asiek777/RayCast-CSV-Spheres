@@ -27,16 +27,16 @@ float2 cutWithSphere(float3 rayStart, float3 rayEnd, sphere S, float3 d) {
 }
 
 
-__kernel void noise_uniform(__global uchar4* outputImage, int2 pos, int AA_LEVEL,
+__kernel void noise_uniform(__global uchar4* outputImage, int3 pos, int AA_LEVEL,
 	__global sphere* spheres, int sphereCount, __local float2* cuts)
 {
-	
-	int inx = get_global_id(0) + get_global_id(1) * get_global_size(0);
-	int x = get_global_id(0);
-	int y = get_global_id(1);
+	int2 offset = (int2)(get_global_size(0), get_global_size(1));
+	int2 gid = (int2)(get_global_id(0), get_global_id(1));
+	int2 lid = (int2)(get_local_id(0), get_local_id(1));
+	int inx = gid.x + gid.y * offset.x;
 
-	float3 rayStart = (float3)(500. - pos.x, 500. - pos.y, 0.);
-	float3 rayEnd = (float3)((x - pos.x) / AA_LEVEL, (y - pos.y) / AA_LEVEL, 1000.);
+	float3 rayStart = (float3)(pos.x, pos.y, pos.z);
+	float3 rayEnd = rayStart  + (float3)(gid.x - (offset.x / 2), gid.y - (offset.y / 2), 1000);//(float3)((x - pos.x), (y - pos.y), 1000.);
 	float3 d = rayEnd - rayStart;
 
 	outputImage[inx] = (uchar4)(255, 0, 255, 255);
@@ -44,8 +44,6 @@ __kernel void noise_uniform(__global uchar4* outputImage, int2 pos, int AA_LEVEL
 
 	for (int i = 0; i < sphereCount; i++) {
 		cuts[i] = cutWithSphere(rayStart, rayEnd, spheres[i], d);
-		//printf("%d %f %f %f %f", i, spheres[i].p.x, spheres[i].p.y, spheres[i].p.z, spheres[i].R);
-
 		float t = cuts[i].x;
 		if (t > 0) {
 			float3 point = rayStart + t * d;
@@ -53,8 +51,18 @@ __kernel void noise_uniform(__global uchar4* outputImage, int2 pos, int AA_LEVEL
 			float3 bright3 = normal * (float3)(cos(1.), 0, sin(-1.));
 			float bright = bright3.x + bright3.y + bright3.z;
 			outputImage[inx] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
-		}	
+		}
 	}
+	//for (int i = 0; i < sphereCount; i++) {
+	//	float t = cuts[i].x;
+	//	if (t > 0) {
+	//		float3 point = rayStart + t * d;
+	//		float3 normal = (point - spheres[i].p) / spheres[i].R;
+	//		float3 bright3 = normal * (float3)(cos(1.), 0, sin(-1.));
+	//		float bright = bright3.x + bright3.y + bright3.z;
+	//		outputImage[inx] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
+	//	}
+	//}
 }
 
 	
