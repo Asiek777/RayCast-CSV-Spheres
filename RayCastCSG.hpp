@@ -147,13 +147,6 @@ class RayCastCSG
         int createOutputImage();
 
         /**
-        * Write to an image file
-        * @param outputImageName name of the output file
-        * @return SDK_SUCCESS on success and SDK_FAILURE on failure
-        */
-        int writeOutputImage(std::string outputImageName);
-
-        /**
         * Constructor
         * Initialize member variables
         */
@@ -192,11 +185,8 @@ class RayCastCSG
          */
         int initializeGL(int argc, char * argv[]);
 
-        void displayFunc(void);
         void keyboardFunc(unsigned char, int, int);
 
-        static void displayFuncWrapper(void);
-        static void keyboardFuncWrapper(unsigned char, int, int);
 
 #ifdef _WIN32
         int enableGLAndGetGLContext(HWND hWnd,
@@ -281,13 +271,6 @@ class RayCastCSG
         * @return SDK_SUCCESS on success and SDK_FAILURE on failure
         */
         int cleanup();
-
-        /**
-        * Override from SDKSample
-        * Verify against reference implementation
-        * @return SDK_SUCCESS on success and SDK_FAILURE on failure
-        */
-        int verifyResults();
 };
 
 #endif // URNG_H_

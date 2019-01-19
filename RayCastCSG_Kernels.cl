@@ -38,14 +38,16 @@ __kernel void noise_uniform(__global uchar4* outputImage, int factor, int AA_LEV
 	S.p = (float3)(500., 500., 500.);
 	S.R = 100;
 	float2 t2 = cutWithSphere(rayStart, rayEnd, S);
-
+	float dx = rayEnd.x - rayStart.x;
+	float dy = rayEnd.y - rayStart.y;
+	float dz = rayEnd.z - rayStart.z;
 
 	float t = t2.x;
 	outputImage[pos] = (uchar4)(255 ,0, 255, 255);
 	//printf("%d %d: %f %f %f %f", x, y, a, b, c, delta);
 	if (t>0) {
 		float3 point = rayStart + t * (float3)(dx, dy, dz);
-		float3 normal = (point - sphereCenter) / Radius;
+		float3 normal = (point - S.p) / S.R;
 		float3 bright3 = normal * (float3)(cos(1.), 0, sin(-1.));
 		float bright = bright3.x + bright3.y + bright3.z;
 		outputImage[pos] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));

@@ -99,22 +99,6 @@ RayCastCSG::createOutputImage()
 
 }
 
-
-int
-RayCastCSG::writeOutputImage(std::string outputImageName)
-{
-    // copy output image data back to original pixel data
-    //memcpy(pixelData, outputImageData, width * height * pixelSize);
-
-    //// write the output bmp file
-    //if(!inputBitmap.write(outputImageName.c_str()))
-    //{
-    //    std::cout << "Failed to write output image!";
-    //    return SDK_FAILURE;
-    //}
-    return SDK_SUCCESS;
-}
-
 int
 RayCastCSG::genBinaryImage()
 {
@@ -1068,9 +1052,6 @@ RayCastCSG::run()
         }
 #endif
     }
-    // write the output image to bitmap file
-    status = writeOutputImage(OUTPUT_IMAGE);
-    CHECK_ERROR(status, SDK_SUCCESS, "Write Output Image Failed");
 
     return SDK_SUCCESS;
 }
@@ -1091,173 +1072,6 @@ RayCastCSG::cleanup()
     //FREE(verificationOutput);
 
     return SDK_SUCCESS;
-}
-
-
-void
-RayCastCSG::URNGCPUReference()
-{
-
-}
-
-
-int
-RayCastCSG::verifyResults()
-{
-    //if(sampleArgs->verify)
-    //{
-    //    float mean = 0;
-    //    for(int i = 0; i < (int)(width * height); i++)
-    //    {
-    //        mean += outputImageData[i].s[0] - inputImageData[i].s[0];
-    //    }
-    //    mean /= (width * height * factor);
-
-    //    if(fabs(mean) < 1.0)
-    //    {
-    //        std::cout << "Passed! \n" << std::endl;
-    //        return SDK_SUCCESS;
-    //    }
-    //    else
-    //    {
-    //        std::cout << "Failed! \n" << std::endl;
-    //        return SDK_FAILURE;
-    //    }
-    //}
-    return SDK_SUCCESS;
-}
-
-void
-RayCastCSG::printStats()
-{
-    if(sampleArgs->timing)
-    {
-        std::string strArray[4] =
-        {
-            "Width",
-            "Height",
-            "Time(sec)",
-            "kernelTime(sec)"
-        };
-        std::string stats[4];
-
-        sampleTimer->totalTime = setupTime + kernelTime;
-
-        stats[0] = toString(width, std::dec);
-        stats[1] = toString(height, std::dec);
-        stats[2] = toString(sampleTimer->totalTime, std::dec);
-        stats[3] = toString(kernelTime, std::dec);
-
-        printStatistics(strArray, stats, 4);
-    }
-}
-
-void
-RayCastCSG::displayFunc()
-{
-    t1 = clock() * CLOCKS_PER_SEC;
-    frameCount++;
-
-    // Execute the kernel which computes Noise
-    if(runCLKernels() != SDK_SUCCESS)
-    {
-        std::cout << "RunCLKernel Failed" << std::endl;
-    }
-
-    // Bind PBO and texture
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER_ARB, pbo);
-    glBindTexture(GL_TEXTURE_2D, tex);
-
-    // Copy pixels from pbo to texture
-    glTexSubImage2D(GL_TEXTURE_2D,
-                    0,
-                    0,
-                    0,
-                    width,
-                    height,
-                    GL_RGBA,
-                    GL_UNSIGNED_BYTE,
-                    NULL);
-
-
-    // Display image using texture
-    glDisable(GL_DEPTH_TEST);
-    glDisable(GL_LIGHTING);
-    glEnable(GL_TEXTURE_2D);
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
-    glOrtho(-1.0, 1.0, -1.0, 1.0, -1.0, 1.0);
-
-    glMatrixMode( GL_MODELVIEW);
-    glLoadIdentity();
-
-    glViewport(0, 0, windowWidth, windowHeight);
-
-    glBegin(GL_QUADS);
-
-    glTexCoord2f(0.0, 0.0);
-    glVertex3f(-1.0, -1.0, 0.5);
-
-    glTexCoord2f(1.0, 0.0);
-    glVertex3f(1.0, -1.0, 0.5);
-
-    glTexCoord2f(1.0, 1.0);
-    glVertex3f(1.0, 1.0, 0.5);
-
-    glTexCoord2f(0.0, 1.0);
-    glVertex3f(-1.0, 1.0, 0.5);
-
-    glEnd();
-
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-
-    glDisable(GL_TEXTURE_2D);
-    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
-    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-
-#ifndef _WIN32
-    glutSwapBuffers();
-    glutPostRedisplay();
-#endif
-    t2 = clock() * CLOCKS_PER_SEC;
-    totalElapsedTime += (double)(t2 - t1);
-    if(frameCount && frameCount > frameRefCount)
-    {
-        // set GLUT Window Title
-        char title[256];
-        double fMs = (double)((totalElapsedTime / (double)CLOCKS_PER_SEC) /
-                              (double) frameCount);
-        int framesPerSec = (int)(1.0 / (fMs / CLOCKS_PER_SEC));
-#if defined (_WIN32) && !defined(__MINGW32__)
-        sprintf_s(title, 256, "RayCastCSG | %d fps ", framesPerSec);
-#else
-        sprintf(title, "RayCastCSG | %d fps ", framesPerSec);
-#endif
-#ifndef _WIN32
-        glutSetWindowTitle(title);
-#endif
-        frameCount = 0;
-        totalElapsedTime = 0.0;
-    }
-}
-
-
-void
-RayCastCSG::displayFuncWrapper()
-{
-    // Call non-static function
-    //RayCast->displayFunc();
-}
-
-void
-RayCastCSG::keyboardFuncWrapper(unsigned char key, int x, int y)
-{
-    // Call non-static function
-    RayCast->keyboardFunc(key , x, y);
 }
 
 // Initialize the value to NULL
@@ -1656,10 +1470,6 @@ main(int argc, char * argv[])
         return SDK_FAILURE;
     }
 
-    if(RayCast.verifyResults() != SDK_SUCCESS)
-    {
-        return SDK_FAILURE;
-    }
 
 #ifdef _WIN32
     RayCast.disableGL(gHwnd, gHdc, gGlCtx);
@@ -1672,6 +1482,6 @@ main(int argc, char * argv[])
         return SDK_FAILURE;
     }
 
-    RayCast.printStats();
+    //RayCast.printStats();
     return SDK_SUCCESS;
 }
