@@ -92,6 +92,7 @@ class RayCastCSG
 
         static RayCastCSG *RayCast;
 		sphere* spheres;
+		cl_int* treeInONP;
         cl_double setupTime;                /**< time taken to setup OpenCL resources and building kernel */
         cl_double kernelTime;               /**< time taken to run kernel and read result back */
         cl_uchar4* inputImageData;          /**< Input bitmap data to device */
@@ -167,10 +168,15 @@ class RayCastCSG
             pos = pos;
             frameCount = 0;
             frameRefCount = 120;
+
 			spheres = new sphere[SPHERECOUNT]{
-			sphere(0,0,700,100),
-			sphere(100,100,800,80),
-			sphere(-300,300,900,40)
+				sphere(0,0,700,100),
+				sphere(100,100,800,80),
+				sphere(-300,300,900,40)
+			};
+
+			treeInONP = new int[SPHERECOUNT * 2 - 1]{
+				0, 1, -1, 2, -1
 			};
 			
         }

@@ -1,3 +1,5 @@
+#define SPHERECOUNT 3
+#define SUM -1
 
 /* Use float4 as input and output rather than uchar4 to save unnecessary conversions */
 
@@ -5,6 +7,11 @@ typedef struct sphere {
 	float3 p;
 	float R;
 } sphere;
+
+typedef struct cut {
+	float2 t;
+	int2 sphere;
+} cut;
 
 float2 cutWithSphere(float3 rayStart, float3 rayEnd, sphere S, float3 d) {
 
@@ -17,18 +24,50 @@ float2 cutWithSphere(float3 rayStart, float3 rayEnd, sphere S, float3 d) {
 		- 2 * (S.p.x * rayStart.x + S.p.y * rayStart.y + S.p.z * rayStart.z)
 		- S.R * S.R;
 	float delta = b * b - 4 * a * c;
-	if (delta <= 0)
-		return (float2)(-1., -1.);
 	float t1 = (-b - sqrt(delta)) / (2 * a);
 	float t2 = (-b + sqrt(delta)) / (2 * a);
-	//if (delta <= 0)
-	// printf("%f", delta);
+
 	return (float2)(t1, t2);
+}
+
+float calcBrithgness(sphere s, float3 point) {
+	float3 normal = (point - s.p) / s.R;
+	float3 bright3 = normal * (float3)(cos(1.), 0, sin(-1.));
+	return bright3.x + bright3.y + bright3.z;
+}
+
+char isCutGood(cut c) {
+	return !isnan(c.t.x);
+}
+
+cut cutSum(cut c1, cut c2) {
+	if (isCutGood(c1)) {
+		cut c;
+		if (c1.t.x > c2.t.x) {
+			c.t.x = c2.t.x;
+			c.sphere.x = c2.sphere.x;
+		}
+		else {
+			c.t.x = c1.t.x;
+			c.sphere.x = c1.sphere.x;
+		}
+		if (c1.t.y < c2.t.y) {
+			c.t.y = c2.t.y;
+			c.sphere.y = c2.sphere.y;
+		}
+		else {
+			c.t.y = c1.t.y;
+			c.sphere.y = c1.sphere.y;
+		}
+		return c;
+	}
+	else
+		return c2;
 }
 
 
 __kernel void noise_uniform(__global uchar4* outputImage, int3 pos, int AA_LEVEL,
-	__global sphere* spheres, int sphereCount, __local float2* cuts)
+	__global sphere* spheres, __global int* onpGlobal)
 {
 	int2 offset = (int2)(get_global_size(0), get_global_size(1));
 	int2 gid = (int2)(get_global_id(0), get_global_id(1));
@@ -40,32 +79,57 @@ __kernel void noise_uniform(__global uchar4* outputImage, int3 pos, int AA_LEVEL
 	float3 d = rayEnd - rayStart;
 
 	outputImage[inx] = (uchar4)(255, 0, 255, 255);
-	//printf("%d %d %d", sizeof(sphere), sizeof(float3), sizeof(float));
 
-	for (int i = 0; i < sphereCount; i++) {
-		cuts[i] = cutWithSphere(rayStart, rayEnd, spheres[i], d);
-		float t = cuts[i].x;
-		if (t > 0) {
-			float3 point = rayStart + t * d;
-			float3 normal = (point - spheres[i].p) / spheres[i].R;
-			float3 bright3 = normal * (float3)(cos(1.), 0, sin(-1.));
-			float bright = bright3.x + bright3.y + bright3.z;
-			outputImage[inx] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
+	int onp[(SPHERECOUNT << 1) - 1];
+	int onpCount = (SPHERECOUNT << 1) - 1;
+	for (int i = 0; i < onpCount; i++)
+		onp[i] = onpGlobal[i];
+	cut cuts[SPHERECOUNT];
+	int onpStack[SPHERECOUNT];
+
+	for (int i = 0; i < SPHERECOUNT; i++) {
+		cuts[i].t = cutWithSphere(rayStart, rayEnd, spheres[i], d);
+		cuts[i].sphere = (int2)(i, i);
+	}
+
+	int stackPtr = 0;
+	for (int i = 0; i < onpCount; i++) {
+		if (onp[i] >= 0) {
+			onpStack[stackPtr] = onp[i];
+			stackPtr++;
+			//printf("%d %d", onp[i], stackPtr);
+		}
+		else {
+			if (onp[i] == -1) {
+				cuts[onpStack[stackPtr] - 2] = 
+					cutSum(cuts[onpStack[stackPtr] - 2], cuts[onpStack[stackPtr] - 1]);
+			}
+			stackPtr--;
+			//barrier(CLK_LOCAL_MEM_FENCE);
 		}
 	}
-	//for (int i = 0; i < sphereCount; i++) {
-	//	float t = cuts[i].x;
-	//	if (t > 0) {
-	//		float3 point = rayStart + t * d;
-	//		float3 normal = (point - spheres[i].p) / spheres[i].R;
-	//		float3 bright3 = normal * (float3)(cos(1.), 0, sin(-1.));
-	//		float bright = bright3.x + bright3.y + bright3.z;
-	//		outputImage[inx] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
-	//	}
-	//}
+
+	float t = cuts[onpStack[stackPtr]].t.x;
+	if (t > 0) {
+		//printf("%d %f", stackPtr,  t);
+		float bright = calcBrithgness(spheres[cuts[onpStack[stackPtr]].sphere.x] ,rayStart + t * d);
+		outputImage[inx] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
+	}
+
+	/*for (int i = 0; i < SPHERECOUNT; i++) {
+		if (cuts[i].t.x > 0 && cuts[i].t.x < t) {
+			t = cuts[i].t.x;
+			float3 point = rayStart + t * d;
+			float3 normal = (point - sphere[i].p) / sphere[i].R;
+			float3 bright3 = normal * (float3)(cos(1.), 0, sin(-1.));
+			
+			outputImage[inx] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
+		}*/
+		//else
+			//printf("%d %f %f", cuts[i].sphere, cuts[i].t.x, cuts[i].t.y);
+	//q}
 }
 
-	
 	
 	//printf("%d %d: %f %f %f %f", x, y, a, b, c, delta);
 	

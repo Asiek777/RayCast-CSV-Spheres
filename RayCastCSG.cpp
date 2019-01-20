@@ -94,8 +94,8 @@ int
 RayCastCSG::createOutputImage()
 {
     // get width and height of input image
-	windowHeight = 1024;
-	windowWidth = 1024;
+	windowHeight = 1000;
+	windowWidth = 1800;
 	height = windowHeight * AA_LEVEL;
 	width = windowWidth * AA_LEVEL;
 
@@ -627,6 +627,7 @@ RayCastCSG::runCLKernels()
     CHECK_OPENCL_ERROR(status, "clEnqueueAcquireGLObjects failed.");
 
 	cl::Buffer sphereBuffer(spheres, spheres + SPHERECOUNT, true);
+	cl::Buffer ONPtreeBuffer(treeInONP, treeInONP + (SPHERECOUNT * 2 - 1), true);
 
     status = commandQueue.flush();
     CHECK_OPENCL_ERROR(status, "cl::CommandQueue.flush() failed.");
@@ -649,10 +650,8 @@ RayCastCSG::runCLKernels()
 	status = kernel.setArg(3, sphereBuffer);
 	CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (spheres)");
 
-	status = kernel.setArg(4, SPHERECOUNT);
-	CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (spheresCount)");
-
-	status = kernel.setArg(5, sizeof(cl_float), nullptr);
+	status = kernel.setArg(4, ONPtreeBuffer);
+	/*status = kernel.setArg(5, sizeof(cl_float), nullptr);*/
 
 	//printf("%d\n", sizeof(sphere));
     // Enqueue a kernel run call.
