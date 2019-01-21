@@ -643,14 +643,10 @@ RayCastCSG::runCLKernels()
     status = kernel.setArg( 1 ,pos);
     CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (pos)");
 
-	// Antialiasing
-	status = kernel.setArg(2, AA_LEVEL);
-	CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (AA_LEVEL)");
-
-	status = kernel.setArg(3, sphereBuffer);
+	status = kernel.setArg(2, sphereBuffer);
 	CHECK_OPENCL_ERROR(status, "cl::Kernel.setArg() failed. (spheres)");
 
-	status = kernel.setArg(4, ONPtreeBuffer);
+	status = kernel.setArg(3, ONPtreeBuffer);
 	/*status = kernel.setArg(5, sizeof(cl_float), nullptr);*/
 
 	//printf("%d\n", sizeof(sphere));

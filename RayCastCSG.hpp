@@ -59,7 +59,13 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #define screenWidth  512
 #define screenHeight 512
 #define AA_LEVEL 1
-#define SPHERECOUNT 3
+
+
+#define SPHERECOUNT 6
+#define SUM -1
+#define INTERSEC -2
+#define SUB -3
+
 
 #define GROUP_SIZE 64
 
@@ -170,13 +176,18 @@ class RayCastCSG
             frameRefCount = 120;
 
 			spheres = new sphere[SPHERECOUNT]{
-				sphere(0,0,700,100,		1,0,0),
-				sphere(100,100,700,80),
-				sphere(-300,300,900,40)
+				sphere(200, 200, 800, 50,		0.9,0.9,0.9),
+				sphere(240, 240, 760, 26,	0.9,0.9,0.9),
+				sphere(-300, 300, 900, 40),
+				sphere(-50, 0, 800, 65,		1, 0, 0),
+				sphere(50, 0, 800, 65,		0, 1, 0),
+				sphere(10, 10, 740, 60,		1, 1, 0)
 			};
 
 			treeInONP = new int[SPHERECOUNT * 2 - 1]{
-				0, 1, -2, 2, -1
+				0, 1, SUB, 2, SUM,
+				3, 4, SUM, 5, SUB,
+				SUM
 			};
 			
         }
