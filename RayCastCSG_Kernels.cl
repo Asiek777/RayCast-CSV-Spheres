@@ -1,5 +1,6 @@
 #define SPHERECOUNT 3
 #define SUM -1
+//#define 
 
 /* Use float4 as input and output rather than uchar4 to save unnecessary conversions */
 
@@ -46,6 +47,7 @@ cut cutSum(cut c1, cut c2) {
 		if (c1.t.x > c2.t.x) {
 			c.t.x = c2.t.x;
 			c.sphere.x = c2.sphere.x;
+			
 		}
 		else {
 			c.t.x = c1.t.x;
@@ -54,14 +56,17 @@ cut cutSum(cut c1, cut c2) {
 		if (c1.t.y < c2.t.y) {
 			c.t.y = c2.t.y;
 			c.sphere.y = c2.sphere.y;
+			//printf(".  %d %d %f %f", c.sphere.x, c.sphere.y, c.t.x, c.t.y);
 		}
 		else {
 			c.t.y = c1.t.y;
 			c.sphere.y = c1.sphere.y;
+			//printf("0  %d %d %f %f", c.sphere.x, c.sphere.y, c.t.x, c.t.y);
 		}
+		//printf("%d %d %f %f", c.sphere.x, c.sphere.y, c.t.x, c.t.y);
 		return c;
 	}
-	else
+	else 
 		return c2;
 }
 
@@ -101,33 +106,20 @@ __kernel void noise_uniform(__global uchar4* outputImage, int3 pos, int AA_LEVEL
 		}
 		else {
 			if (onp[i] == -1) {
-				cuts[onpStack[stackPtr] - 2] = 
-					cutSum(cuts[onpStack[stackPtr] - 2], cuts[onpStack[stackPtr] - 1]);
+				cuts[onpStack[stackPtr - 2]] = 
+					cutSum(cuts[onpStack[stackPtr - 2]], cuts[onpStack[stackPtr - 1]]);
 			}
 			stackPtr--;
 			//barrier(CLK_LOCAL_MEM_FENCE);
 		}
 	}
 
-	float t = cuts[onpStack[stackPtr]].t.x;
+	float t = cuts[onpStack[stackPtr - 1]].t.x;
 	if (t > 0) {
 		//printf("%d %f", stackPtr,  t);
-		float bright = calcBrithgness(spheres[cuts[onpStack[stackPtr]].sphere.x] ,rayStart + t * d);
+		float bright = calcBrithgness(spheres[cuts[onpStack[stackPtr - 1]].sphere.x] ,rayStart + t * d);
 		outputImage[inx] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
 	}
-
-	/*for (int i = 0; i < SPHERECOUNT; i++) {
-		if (cuts[i].t.x > 0 && cuts[i].t.x < t) {
-			t = cuts[i].t.x;
-			float3 point = rayStart + t * d;
-			float3 normal = (point - sphere[i].p) / sphere[i].R;
-			float3 bright3 = normal * (float3)(cos(1.), 0, sin(-1.));
-			
-			outputImage[inx] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
-		}*/
-		//else
-			//printf("%d %f %f", cuts[i].sphere, cuts[i].t.x, cuts[i].t.y);
-	//q}
 }
 
 	
