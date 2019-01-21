@@ -7,6 +7,7 @@
 typedef struct sphere {
 	float3 p;
 	float R;
+	float4 color;
 } sphere;
 
 typedef struct cut {
@@ -102,15 +103,14 @@ cut cutIntersec(cut c1, cut c2) {
 
 
 __kernel void noise_uniform(__global uchar4* outputImage, int3 pos, int AA_LEVEL,
-	__global sphere* spheres, __global int* onpGlobal)
-{
+	__global sphere* spheres, __global int* onpGlobal) {
 	int2 offset = (int2)(get_global_size(0), get_global_size(1));
 	int2 gid = (int2)(get_global_id(0), get_global_id(1));
 	int2 lid = (int2)(get_local_id(0), get_local_id(1));
 	int inx = gid.x + gid.y * offset.x;
 
 	float3 rayStart = (float3)(pos.x, pos.y, pos.z);
-	float3 rayEnd = rayStart  + (float3)(gid.x - (offset.x / 2), gid.y - (offset.y / 2), 1000);//(float3)((x - pos.x), (y - pos.y), 1000.);
+	float3 rayEnd = rayStart + (float3)(gid.x - (offset.x / 2), gid.y - (offset.y / 2), 1000);//(float3)((x - pos.x), (y - pos.y), 1000.);
 	float3 d = rayEnd - rayStart;
 
 	outputImage[inx] = (uchar4)(255, 0, 255, 255);
@@ -136,22 +136,23 @@ __kernel void noise_uniform(__global uchar4* outputImage, int3 pos, int AA_LEVEL
 		}
 		else {
 			if (onp[i] == SUM) {
-				cuts[onpStack[stackPtr - 2]] = 
-					cutSum(cuts[onpStack[stackPtr - 2]], cuts[onpStack[stackPtr - 1]]);
-			}
-			else if(onp[i] == INTERSEC){
 				cuts[onpStack[stackPtr - 2]] =
-					cutIntersec(cuts[onpStack[stackPtr - 2]], cuts[onpStack[stackPtr - 1]]);
+					cutSum(cuts[onpStack[stackPtr - 1]], cuts[onpStack[stackPtr - 2]]);
+			}
+			else if (onp[i] == INTERSEC) {
+				cuts[onpStack[stackPtr - 2]] =
+					cutIntersec(cuts[onpStack[stackPtr - 1]], cuts[onpStack[stackPtr - 2]]);
 			}
 			stackPtr--;
 			barrier(CLK_LOCAL_MEM_FENCE);
 		}
 	}
 
-	float t = cuts[onpStack[stackPtr - 1]].t.x;
+	float t = cuts[onpStack[0]].t.x;
 	if (t > 0) {
 		//printf("%d %f", stackPtr,  t);
-		float bright = calcBrithgness(spheres[cuts[onpStack[stackPtr - 1]].sphere.x] ,rayStart + t * d);
-		outputImage[inx] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
+		float bright = calcBrithgness(spheres[cuts[onpStack[0]].sphere.x], rayStart + t * d);
+		outputImage[inx] = convert_uchar4_sat(
+			bright * 255 * spheres[cuts[onpStack[0]].sphere.x].color);
 	}
-}	-
+}

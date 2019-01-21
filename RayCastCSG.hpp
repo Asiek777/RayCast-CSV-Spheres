@@ -170,8 +170,8 @@ class RayCastCSG
             frameRefCount = 120;
 
 			spheres = new sphere[SPHERECOUNT]{
-				sphere(0,0,700,100),
-				sphere(100,100,800,80),
+				sphere(0,0,700,100,		1,0,0),
+				sphere(100,100,700,80),
 				sphere(-300,300,900,40)
 			};
 
