@@ -1,6 +1,6 @@
 #define SPHERECOUNT 3
 #define SUM -1
-//#define 
+#define INTERSEC -2
 
 /* Use float4 as input and output rather than uchar4 to save unnecessary conversions */
 
@@ -70,6 +70,36 @@ cut cutSum(cut c1, cut c2) {
 		return c2;
 }
 
+cut cutIntersec(cut c1, cut c2) {
+	if (isCutGood(c1)) {
+		if (isCutGood(c2)) {
+			cut c;
+			if (c1.t.x < c2.t.x) {
+				c.t.x = c2.t.x;
+				c.sphere.x = c2.sphere.x;
+			}
+			else {
+				c.t.x = c1.t.x;
+				c.sphere.x = c1.sphere.x;
+			}
+			if (c1.t.y > c2.t.y) {
+				c.t.y = c2.t.y;
+				c.sphere.y = c2.sphere.y;
+				//printf(".  %d %d %f %f", c.sphere.x, c.sphere.y, c.t.x, c.t.y);
+			}
+			else {
+				c.t.y = c1.t.y;
+				c.sphere.y = c1.sphere.y;
+			}
+			return c;
+		}
+		else
+			return c2;
+	}
+	else
+		return c1;
+}
+
 
 __kernel void noise_uniform(__global uchar4* outputImage, int3 pos, int AA_LEVEL,
 	__global sphere* spheres, __global int* onpGlobal)
@@ -105,12 +135,16 @@ __kernel void noise_uniform(__global uchar4* outputImage, int3 pos, int AA_LEVEL
 			//printf("%d %d", onp[i], stackPtr);
 		}
 		else {
-			if (onp[i] == -1) {
+			if (onp[i] == SUM) {
 				cuts[onpStack[stackPtr - 2]] = 
 					cutSum(cuts[onpStack[stackPtr - 2]], cuts[onpStack[stackPtr - 1]]);
 			}
+			else if(onp[i] == INTERSEC){
+				cuts[onpStack[stackPtr - 2]] =
+					cutIntersec(cuts[onpStack[stackPtr - 2]], cuts[onpStack[stackPtr - 1]]);
+			}
 			stackPtr--;
-			//barrier(CLK_LOCAL_MEM_FENCE);
+			barrier(CLK_LOCAL_MEM_FENCE);
 		}
 	}
 
@@ -120,33 +154,4 @@ __kernel void noise_uniform(__global uchar4* outputImage, int3 pos, int AA_LEVEL
 		float bright = calcBrithgness(spheres[cuts[onpStack[stackPtr - 1]].sphere.x] ,rayStart + t * d);
 		outputImage[inx] = convert_uchar4_sat(bright * (float4)(255, 255, 255, 255));
 	}
-}
-
-	
-	//printf("%d %d: %f %f %f %f", x, y, a, b, c, delta);
-	
-
-
-
-	
-
-	 
-
-
-
-
-
-
-	
-
-	
-
-
-
-
-	
-
-	
-
-	
-	
+}	-
