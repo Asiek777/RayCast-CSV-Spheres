@@ -1,4 +1,4 @@
-#define SPHERECOUNT 6
+#define SPHERECOUNT 17
 #define SUM -1
 #define INTERSEC -2
 #define SUB -3
@@ -180,7 +180,6 @@ __kernel void noise_uniform(__global uchar4* outputImage, int3 pos,
 		if (onp[i] >= 0) {
 			onpStack[stackPtr] = onp[i];
 			stackPtr++;
-			//printf("%d %d", onp[i], stackPtr);
 		}
 		else {
 			if (onp[i] == SUM) {
@@ -196,18 +195,13 @@ __kernel void noise_uniform(__global uchar4* outputImage, int3 pos,
 					cutSub(cuts[onpStack[stackPtr - 2]], cuts[onpStack[stackPtr - 1]]);
 			}
 			stackPtr--;
-			//barrier(CLK_LOCAL_MEM_FENCE);
+			barrier(CLK_LOCAL_MEM_FENCE);
 		}
 	}
-	/*if (isCutGood(cuts[onpStack[0]]))
-		printf(". %d %d", cuts[onpStack[0]].sphere.x, cuts[onpStack[0]].sphere.y);*/
+
 	float t = cuts[onpStack[0]].t.x;
 	if (t > 0.000001) {
-		/*if (t >= 1) {
-			printf("0 %f %f", cuts[onpStack[0]].t.x, cuts[onpStack[0]].t.y);
-		}*/
-		//printf("%d %f", stackPtr,  t);
-		//printf("%d", sizeof(sphere));
+
 		int sphinx = cuts[onpStack[0]].sphere.x;
 		uchar side = 1;
 		if (sphinx < 0) {

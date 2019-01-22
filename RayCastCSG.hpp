@@ -61,7 +61,7 @@ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND 
 #define AA_LEVEL 1
 
 
-#define SPHERECOUNT 6
+#define SPHERECOUNT 17
 #define SUM -1
 #define INTERSEC -2
 #define SUB -3
@@ -177,17 +177,32 @@ class RayCastCSG
 
 			spheres = new sphere[SPHERECOUNT]{
 				sphere(200, 200, 800, 50,		0.9,0.9,0.9),
-				sphere(240, 240, 760, 26,	0.9,0.9,0.9),
-				sphere(-300, 300, 900, 40),
-				sphere(-50, 0, 800, 65,		1, 0, 0),
-				sphere(50, 0, 800, 65,		0, 1, 0),
-				sphere(10, 10, 740, 60,		1, 1, 0)
+				sphere(240, 240, 760, 26,		0.9,0.9,0.9),
+				sphere(50, 0, 800, 65,			1, 0, 0),
+				sphere(150, 0, 800, 65,			0, 1, 0),
+				sphere(110, 30, 750, 60,		1, 1, 0),
+				sphere(-50, -180, 800, 65,		1, 0, 0),
+				sphere(50, -180, 800, 65,		0, 1, 0),
+				sphere(230, -150, 750, 60,		1, 1, 0),
+				sphere(-350, -170, 800, 40,		0, 0, 1),
+				sphere(-250, -210, 810, 45,		0, 1, 1),
+				sphere(-280, 0, 800, 40,		0, 0, 1),
+				sphere(-280, -40, 800, 45,		0, 1, 1),
+				sphere(-100, 190, 800, 65,		1, 0, 0),
+				sphere(0, 190, 800, 65,		0, 1, 0),
+				sphere(-40, 220, 750, 60,		1, 1, 0),
+				sphere(-80, 200, 750, 40,		0, 0, 1),
+				sphere(-80, 150, 750, 45,		0, 1, 1)
 			};
 
 			treeInONP = new int[SPHERECOUNT * 2 - 1]{
-				0, 1, SUB, 2, SUM,
-				3, 4, SUM, 5, SUB,
-				SUM
+				0, 1, SUB,
+				2, 3, SUM, 4, SUB, SUM, 
+				5, 6, SUM, 
+				7, SUM, SUM,
+				8, 9, SUM, SUM,
+				10, 11, INTERSEC, SUM,
+				12, 13, SUM, 14, SUB, 15, 16, INTERSEC, SUB, SUM
 			};
 			
         }
